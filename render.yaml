@@ -1,7 +1,7 @@
 # Render.com — API service only (frontend deploy separately with VITE_API_BASE_URL)
 services:
   - type: web
-    name: zkpassportal-api
+    name: zkpass-new-portal-api
     runtime: node
     rootDir: backend
     buildCommand: npm install

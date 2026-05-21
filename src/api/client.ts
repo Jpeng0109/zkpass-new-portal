@@ -26,10 +26,17 @@ apiClient.interceptors.response.use(
     return res;
   },
   (err) => {
-    const hint =
-      err.code === "ERR_NETWORK"
-        ? `Cannot reach API at ${API_BASE_URL}. Check: (1) URL ends with /api/v1 (2) Render service Root Directory is backend/ (3) CLIENT_ORIGIN includes your Vercel domain (4) free tier cold start — retry in 60s`
-        : err.message;
+    const status = err.response?.status;
+    let hint = err.message;
+    if (status === 404) {
+      hint =
+        `API returned 404 at ${API_BASE_URL}. The Render backend is missing or misconfigured. ` +
+        `Create a separate Render Web Service with Root Directory = backend (not the frontend site). ` +
+        `Correct VITE_API_BASE_URL: https://zkpass-new-portal-api.onrender.com/api/v1`;
+    } else if (err.code === "ERR_NETWORK") {
+      hint =
+        `Cannot reach API at ${API_BASE_URL}. Check URL ends with /api/v1, Render CLIENT_ORIGIN includes your Vercel domain, and cold start (wait 60s).`;
+    }
     const message = err.response?.data?.message || hint || "Request failed";
     if (import.meta.env.DEV) console.error("[api] error:", message);
     return Promise.reject(new Error(message));
