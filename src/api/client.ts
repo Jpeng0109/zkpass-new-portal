@@ -26,12 +26,11 @@ apiClient.interceptors.response.use(
     return res;
   },
   (err) => {
-    const message =
-      err.response?.data?.message ||
-      (err.code === "ERR_NETWORK"
-        ? `Cannot reach API at ${API_BASE_URL}. Is the backend running on port 5000?`
-        : err.message) ||
-      "Request failed";
+    const hint =
+      err.code === "ERR_NETWORK"
+        ? `Cannot reach API at ${API_BASE_URL}. Check: (1) URL ends with /api/v1 (2) Render service Root Directory is backend/ (3) CLIENT_ORIGIN includes your Vercel domain (4) free tier cold start — retry in 60s`
+        : err.message;
+    const message = err.response?.data?.message || hint || "Request failed";
     if (import.meta.env.DEV) console.error("[api] error:", message);
     return Promise.reject(new Error(message));
   },
