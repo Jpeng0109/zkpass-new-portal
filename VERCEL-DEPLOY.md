@@ -26,6 +26,8 @@
 | Install Command | `npm install` |
 | Output Directory | 留空（Nitro 自动生成 `.vercel/output`） |
 
+> **Hobby 免费版**：不要在 `vercel.json` 里配置多个 `regions`，否则会提示需 Pro 计划。
+
 ### 3. 环境变量（必配）
 
 **Settings → Environment Variables**，添加：
