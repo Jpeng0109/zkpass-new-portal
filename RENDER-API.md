@@ -38,17 +38,41 @@ VITE_API_BASE_URL=https://你的后端服务.onrender.com/api/v1
 | `MONGODB_URI` | 你的 Atlas 连接串 |
 | `DNS_SERVERS` | `8.8.8.8,1.1.1.1` |
 | `PORT` | `5000` |
-| `CLIENT_ORIGIN` | `https://你的项目.vercel.app,http://localhost:8080` |
+| `CLIENT_ORIGIN` | 见下方示例（须含 **https://**，无尾部 `/`） |
+| `CORS_ALLOW_VERCEL` | 可选；默认允许所有 `https://*.vercel.app`（预览域名） |
+
+**本项目 Vercel 域名示例（复制到 `CLIENT_ORIGIN`）：**
+
+```env
+CLIENT_ORIGIN=https://zkpass-new-portal.vercel.app,https://zkpass-new-portal-joshuas-projects-5140a10d.vercel.app,http://localhost:8080
+```
 | `NODE_ENV` | `production` |
 
 5. **Create Web Service**，等待 Deploy 成功
 
-6. 验证（应返回 JSON，不是 HTML）：
+6. 验证（**必须**是 JSON，不是 HTML）：
 
 ```
 https://zkpass-new-portal-api.onrender.com/health
 https://zkpass-new-portal-api.onrender.com/api/v1/projects
 ```
+
+| 结果 | 含义 |
+|------|------|
+| `/health` → `{"ok":true,"service":"zkpassportal-api",...}` | ✅ 后端正确 |
+| `/health` → 只有 `ok` 或 `/api/v1/projects` → HTML 页面 | ❌ **Root Directory 填错了**（部署成了前端） |
+| 浏览器报 Cannot reach API / ERR_NETWORK | 检查 **CLIENT_ORIGIN** 是否包含完整 Vercel 域名；或冷启动等 60 秒 |
+
+### 已建错服务时怎么改
+
+Render → 你的 `zkpass-new-portal-api` 服务 → **Settings**：
+
+- **Root Directory** → `backend`（不要留空、不要 `/`）
+- **Build Command** → `npm install`
+- **Start Command** → `npm start`
+- **Health Check Path** → `/health`
+
+保存后 **Manual Deploy → Clear build cache & deploy**。
 
 ---
 

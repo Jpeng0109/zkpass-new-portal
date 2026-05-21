@@ -11,6 +11,7 @@
     "seed": "npm run seed --prefix backend",
     "check:api": "node scripts/check-api.mjs",
     "deploy:docker": "powershell -ExecutionPolicy Bypass -File scripts/deploy-docker.ps1",
+    "push:github": "powershell -ExecutionPolicy Bypass -File scripts/push-github.ps1",
     "build": "vite build",
     "build:static": "npm run build && node scripts/postbuild-static.mjs",
     "build:vercel": "vite build --config vite.config.vercel.mts",

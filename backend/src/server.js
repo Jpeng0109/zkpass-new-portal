@@ -7,7 +7,16 @@ import apiRoutes from "./routes/index.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
 const PORT = Number(process.env.PORT) || 5000;
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:8080";
+
+/** Comma-separated origins from CLIENT_ORIGIN or ALLOWED_ORIGINS (no localhost default). */
+function parseAllowedOrigins() {
+  const raw = process.env.CLIENT_ORIGIN || process.env.ALLOWED_ORIGINS;
+  if (!raw) return "https://zkpass-new-portal.vercel.app";
+  const list = raw.split(",").map((o) => o.trim()).filter(Boolean);
+  return list.length === 1 ? list[0] : list;
+}
+
+const corsOrigin = parseAllowedOrigins();
 
 const app = express();
 
@@ -18,14 +27,7 @@ if (process.env.NODE_ENV === "production") {
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(
   cors({
-    origin: (origin, callback) => {
-      const allowed = CLIENT_ORIGIN.split(",").map((o) => o.trim());
-      if (!origin || allowed.includes("*") || allowed.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(null, false);
-      }
-    },
+    origin: corsOrigin,
     credentials: true,
   }),
 );
@@ -54,7 +56,7 @@ async function bootstrap() {
   await connectDatabase();
   app.listen(PORT, () => {
     console.log(`[api] zkPass Portal API listening on http://localhost:${PORT}`);
-    console.log(`[api] CORS allowed: ${CLIENT_ORIGIN}`);
+    console.log(`[api] CORS origin(s): ${JSON.stringify(corsOrigin)}`);
   });
 }
 

@@ -27,9 +27,9 @@ export const Route = createFileRoute("/dashboard")({ component: DashboardPage })
 type ProofStatus = "VERIFIED" | "PENDING" | "FAILED";
 
 function DashboardPage() {
-  const { projects, selectedProjectId, projectsLoading, apiError } = useStore();
+  const { projects, selectedProjectId, projectsLoading, apiError, refreshProjects, apiReady } = useStore();
   const project = projects.find((p) => p.id === selectedProjectId) || projects[0];
-  const { data: dash, loading: dashLoading } = useProjectDashboard(project?.id);
+  const { data: dash, loading: dashLoading, error: dashError, refresh: refreshDashboard } = useProjectDashboard(project?.id);
   const templateType = project ? getTemplateType(project) : "ASSET_SOLVENCY";
   const staticMeta = TEMPLATE_META[templateType];
   const meta = dash?.meta
@@ -40,16 +40,55 @@ function DashboardPage() {
   const data = chartData;
 
   const [selectedProof, setSelectedProof] = useState<ProofRecord | null>(null);
+  const [tab, setTab] = useState<"all" | "verified" | "pending">("all");
+  const [headerQuery, setHeaderQuery] = useState("");
+  const [proofQuery, setProofQuery] = useState("");
+  const [statusFilters, setStatusFilters] = useState<string[]>([]);
 
   useEffect(() => {
     if (proofs[0]) setSelectedProof(proofs[0]);
   }, [templateType, selectedProjectId, proofs]);
 
-  if (projectsLoading || !project) {
+  if (projectsLoading) {
     return (
       <Layout>
-        <div className="page-container flex items-center justify-center min-h-[40vh] text-muted-foreground">
-          Loading projects…
+        <div className="page-container flex flex-col items-center justify-center min-h-[40vh] gap-3 text-muted-foreground">
+          <p>Loading projects…</p>
+          <p className="text-xs text-center max-w-md">
+            First load from Render can take up to 60s (free tier cold start).
+          </p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (apiError || !apiReady) {
+    return (
+      <Layout>
+        <div className="page-container flex flex-col items-center justify-center min-h-[40vh] gap-4 max-w-lg mx-auto text-center">
+          <p className="text-red-300 text-sm">API: {apiError ?? "Could not load projects"}</p>
+          <p className="text-xs text-muted-foreground">
+            Check Render <code className="text-neon">CLIENT_ORIGIN</code> includes your Vercel URL and{" "}
+            <code className="text-neon">VITE_API_BASE_URL</code> ends with <code className="text-neon">/api/v1</code>.
+          </p>
+          <button
+            type="button"
+            onClick={() => refreshProjects()}
+            className="bg-neon text-black px-5 py-2.5 rounded-lg text-sm font-semibold"
+          >
+            Retry
+          </button>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!project) {
+    return (
+      <Layout>
+        <div className="page-container flex flex-col items-center justify-center min-h-[40vh] gap-3 text-muted-foreground text-center">
+          <p>No projects in the database.</p>
+          <p className="text-xs">Run seed: <code className="text-neon">cd backend && npm run seed</code></p>
         </div>
       </Layout>
     );
@@ -58,17 +97,25 @@ function DashboardPage() {
   if (dashLoading || !selectedProof) {
     return (
       <Layout>
-        <div className="page-container flex items-center justify-center min-h-[40vh] text-muted-foreground">
-          Loading dashboard…
+        <div className="page-container flex flex-col items-center justify-center min-h-[40vh] gap-3 text-muted-foreground">
+          {dashError ? (
+            <>
+              <p className="text-red-300 text-sm">Dashboard: {dashError}</p>
+              <button
+                type="button"
+                onClick={() => refreshDashboard()}
+                className="bg-neon text-black px-5 py-2.5 rounded-lg text-sm font-semibold"
+              >
+                Retry
+              </button>
+            </>
+          ) : (
+            <p>Loading dashboard…</p>
+          )}
         </div>
       </Layout>
     );
   }
-
-  const [tab, setTab] = useState<"all" | "verified" | "pending">("all");
-  const [headerQuery, setHeaderQuery] = useState("");
-  const [proofQuery, setProofQuery] = useState("");
-  const [statusFilters, setStatusFilters] = useState<string[]>([]);
 
   const STATUS_OPTS = [
     { key: "VERIFIED", label: "Verified" },

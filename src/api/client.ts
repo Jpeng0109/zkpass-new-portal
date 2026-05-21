@@ -5,7 +5,7 @@ export const API_BASE_URL =
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: 90000,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -28,14 +28,20 @@ apiClient.interceptors.response.use(
   (err) => {
     const status = err.response?.status;
     let hint = err.message;
-    if (status === 404) {
+    const contentType = String(err.response?.headers?.["content-type"] || "");
+    const body = typeof err.response?.data === "string" ? err.response.data : "";
+    const isHtml = contentType.includes("text/html") || body.trimStart().startsWith("<!DOCTYPE");
+
+    if (status === 404 || isHtml) {
       hint =
-        `API returned 404 at ${API_BASE_URL}. The Render backend is missing or misconfigured. ` +
-        `Create a separate Render Web Service with Root Directory = backend (not the frontend site). ` +
-        `Correct VITE_API_BASE_URL: https://zkpass-new-portal-api.onrender.com/api/v1`;
-    } else if (err.code === "ERR_NETWORK") {
+        `API at ${API_BASE_URL} is serving the frontend, not Express. ` +
+        `On Render set Root Directory = backend, Start = npm start, then redeploy. ` +
+        `Verify /health returns JSON {"service":"zkpassportal-api"}, not plain "ok" or HTML.`;
+    } else if (err.code === "ERR_NETWORK" || err.code === "ECONNABORTED") {
       hint =
-        `Cannot reach API at ${API_BASE_URL}. Check URL ends with /api/v1, Render CLIENT_ORIGIN includes your Vercel domain, and cold start (wait 60s).`;
+        `Cannot reach API at ${API_BASE_URL}. Check: (1) URL ends with /api/v1 ` +
+        `(2) Render Root Directory is backend/ (3) CLIENT_ORIGIN includes your exact Vercel URL ` +
+        `(4) free tier cold start — retry in 60s. Local dev: cd backend && npm run dev`;
     }
     const message = err.response?.data?.message || hint || "Request failed";
     if (import.meta.env.DEV) console.error("[api] error:", message);
