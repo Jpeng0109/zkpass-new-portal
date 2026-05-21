@@ -1,0 +1,26 @@
+# Render.com — API service only (frontend deploy separately with VITE_API_BASE_URL)
+services:
+  - type: web
+    name: zkpassportal-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        sync: false
+      - key: DNS_SERVERS
+        value: 8.8.8.8,1.1.1.1
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: VERIFICATION_CREDIT_COST
+        value: 18.5
+      - key: TOPUP_PLATFORM_FEE_RATE
+        value: 0.02
+      - key: INVOICE_TAX_RATE
+        value: 0.15

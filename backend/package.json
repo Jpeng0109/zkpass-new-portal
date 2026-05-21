@@ -1,0 +1,20 @@
+{
+  "name": "zkpassportal-api",
+  "version": "1.0.0",
+  "description": "zkTLS Infrastructure & Billing PaaS — Express + MongoDB API",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "seed": "node src/scripts/seed.js",
+    "check": "node ../scripts/check-api.mjs"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mongoose": "^8.9.5",
+    "morgan": "^1.10.0"
+  }
+}

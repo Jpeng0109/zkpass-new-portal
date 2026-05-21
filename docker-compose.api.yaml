@@ -1,0 +1,34 @@
+# API only — pair with Vercel frontend or Docker nginx web
+# Usage:
+#   copy .env.production.example .env.production
+#   docker compose -f docker-compose.api.yaml --env-file .env.production up -d --build
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-5000}:5000"
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  seed:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    profiles: ["seed"]
+    env_file:
+      - .env.production
+    command: ["node", "src/scripts/seed.js"]
+    restart: "no"

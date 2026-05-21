@@ -1,0 +1,69 @@
+# Full self-hosted stack (local Mongo + API + Web)
+# For MongoDB Atlas, prefer: docker-compose.atlas.yaml
+
+services:
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: zkpassportal
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGODB_URI: mongodb://mongodb:27017/zkpassportal
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost}
+      VERIFICATION_CREDIT_COST: "18.5"
+      TOPUP_PLATFORM_FEE_RATE: "0.02"
+      INVOICE_TAX_RATE: "0.15"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:5000/api/v1}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  seed:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    profiles: ["seed"]
+    environment:
+      MONGODB_URI: mongodb://mongodb:27017/zkpassportal
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    command: ["node", "src/scripts/seed.js"]
+    restart: "no"
+
+volumes:
+  mongo_data:
