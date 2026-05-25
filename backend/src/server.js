@@ -5,18 +5,15 @@ import morgan from "morgan";
 import { connectDatabase } from "./db.js";
 import apiRoutes from "./routes/index.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
+import { corsOriginCallback } from "./cors.js";
+import {
+  databaseReady,
+  databaseError,
+  requireDatabase,
+  setDatabaseReady,
+} from "./middleware/dbReady.js";
 
 const PORT = Number(process.env.PORT) || 5000;
-
-/** Comma-separated origins from CLIENT_ORIGIN or ALLOWED_ORIGINS (no localhost default). */
-function parseAllowedOrigins() {
-  const raw = process.env.CLIENT_ORIGIN || process.env.ALLOWED_ORIGINS;
-  if (!raw) return "https://zkpass-new-portal.vercel.app";
-  const list = raw.split(",").map((o) => o.trim()).filter(Boolean);
-  return list.length === 1 ? list[0] : list;
-}
-
-const corsOrigin = parseAllowedOrigins();
 
 const app = express();
 
@@ -27,7 +24,7 @@ if (process.env.NODE_ENV === "production") {
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(
   cors({
-    origin: corsOrigin,
+    origin: corsOriginCallback,
     credentials: true,
   }),
 );
@@ -44,23 +41,36 @@ app.get("/", (_req, res) => {
 });
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, service: "zkpassportal-api", version: "1.0.0", port: PORT });
+  res.json({
+    ok: true,
+    service: "zkpassportal-api",
+    version: "1.0.0",
+    port: PORT,
+    db: databaseReady ? "connected" : databaseError ? "error" : "connecting",
+  });
 });
 
-app.use("/api/v1", apiRoutes);
+app.use("/api/v1", requireDatabase, apiRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-async function bootstrap() {
-  await connectDatabase();
+async function connectDatabaseBackground() {
+  try {
+    await connectDatabase();
+    setDatabaseReady(true);
+  } catch (err) {
+    setDatabaseReady(false, err);
+    console.error("[db] Failed to connect:", err.message);
+  }
+}
+
+function bootstrap() {
   app.listen(PORT, () => {
     console.log(`[api] zkPass Portal API listening on http://localhost:${PORT}`);
-    console.log(`[api] CORS origin(s): ${JSON.stringify(corsOrigin)}`);
+    console.log(`[api] CORS: CLIENT_ORIGIN + ${process.env.CORS_ALLOW_VERCEL === "false" ? "no" : ""} *.vercel.app`);
+    void connectDatabaseBackground();
   });
 }
 
-bootstrap().catch((err) => {
-  console.error("[api] Failed to start:", err);
-  process.exit(1);
-});
+bootstrap();

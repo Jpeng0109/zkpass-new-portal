@@ -17,7 +17,9 @@ services:
       - key: DNS_SERVERS
         value: 8.8.8.8,1.1.1.1
       - key: CLIENT_ORIGIN
-        value: https://zkpass-new-portal.vercel.app,https://zkpass-new-portal-joshuas-projects-5140a10d.vercel.app,http://localhost:8080
+        value: https://zkpass-new-portal.vercel.app,https://zkpass-new-portal-joshuas-projects-5140a10d.vercel.app,https://zkpass-new-portal-git-main-joshuas-projects-5140a10d.vercel.app,http://localhost:8080
+      - key: CORS_ALLOW_VERCEL
+        value: "true"
       - key: VERIFICATION_CREDIT_COST
         value: 18.5
       - key: TOPUP_PLATFORM_FEE_RATE
